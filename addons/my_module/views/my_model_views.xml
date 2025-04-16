@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <!-- Tree View -->
+    <record id="view_my_model_tree" model="ir.ui.view">
+      <field name="name">my_module.my_model.tree</field>
+      <field name="model">my_module.my_model</field>
+      <field name="arch" type="xml">
+        <tree>
+          <field name="name"/>
+          <field name="date"/>
+        </tree>
+      </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_my_model_form" model="ir.ui.view">
+      <field name="name">my_module.my_model.form</field>
+      <field name="model">my_module.my_model</field>
+      <field name="arch" type="xml">
+        <form>
+          <sheet>
+            <group>
+              <field name="name"/>
+              <field name="date"/>
+              <field name="description"/>
+              <!-- Compteur lié au nom -->
+              <counter 
+                initial-value="5" 
+                readonly="false"
+                field-ref="description"
+              />
+            </group>
+            
+            <group string="Autres compteurs">
+              <!-- Compteur en lecture seule lié au nom -->
+              <counter 
+                initial-value="10" 
+                readonly="true" 
+                field-ref="name"
+              />
+              <!-- Compteur simple sans liaison -->
+              <counter initial-value="3" />
+            </group>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- Action (pour trigger la vue)-->
+    <record id="action_my_model" model="ir.actions.act_window">
+      <field name="name">My Model</field>
+      <field name="res_model">my_module.my_model</field>
+      <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_my_model_root" name="My Module"/>
+    <menuitem id="menu_my_model" parent="menu_my_model_root" action="action_my_model"/>
+  </data>
+</odoo>

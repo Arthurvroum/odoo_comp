@@ -1,0 +1,42 @@
+<odoo>
+    <!-- Form View -->
+    <record id="view_model2_form" model="ir.ui.view">
+        <field name="name">my_module.model2.form</field>
+        <field name="model">my_module.model2</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <!-- Use the button_field widget -->
+                        <field name="my_model_id" widget="button_field"/>
+                        <field name="name"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <!-- Tree View -->
+    <record id="view_model2_tree" model="ir.ui.view">
+        <field name="name">my_module.model2.tree</field>
+        <field name="model">my_module.model2</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="my_model_id" widget="badge"/>
+                <field name="state"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_model2" model="ir.actions.act_window">
+        <field name="name">Model 2</field>
+        <field name="res_model">my_module.model2</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <!-- Menu Item -->
+    <menuitem id="menu_model2" parent="menu_my_model_root" action="action_model2" sequence="20"/>
+</odoo>

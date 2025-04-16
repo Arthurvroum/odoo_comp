@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="my_module.ButtonFieldTemplate" owl="1">
+        <button t-if="props.value" class="btn btn-primary button-field" t-on-click="onButtonClick">
+            <t t-esc="displayName"/>
+        </button>
+        <span t-else="" class="text-muted">No value</span>
+    </t>
+</templates>

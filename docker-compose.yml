@@ -1,0 +1,30 @@
+services:
+  odoo:
+    image: odoo:17
+    ports:
+      - "9001:8069"
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - ./odoo-17.0+e.20250331/odoo/addons:/var/lib/odoo/addons/17.0:rw  # Montage du répertoire enterprise
+      - ./addons:/mnt/extra-addons:rw  # Montage du répertoire de développement
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=odoo
+    depends_on:
+      - db
+    restart: always
+    
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  odoo-data:
+  postgres-data:
