@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- 
+        Template combiné des widgets button_field et fancy_many2one
+        Template n'est plus utilisé car nous utilisons maintenant le template inline dans le fichier JS
+        Ce fichier est conservé pour référence et pour compatibilité ascendante
+    -->
+    <t t-name="my_module.EnhancedMany2OneWidget" owl="1">
+        <t t-if="isButtonMode">
+            <t t-if="hasValue">
+                <button class="btn btn-primary button-field fancy-many2one" t-on-click="onButtonClick" 
+                        t-att-data-id="recordId" t-att-data-model="relationModel">
+                    <i class="fa fa-external-link me-1"/>
+                    <t t-esc="displayName"/>
+                </button>
+            </t>
+            <t t-else="">
+                <span class="o_field_empty">Empty</span>
+            </t>
+        </t>
+        <t t-else="">
+            <!-- Utiliser le Many2OneField standard en mode édition -->
+            <Many2OneField t-props="props"/>
+        </t>
+    </t>
+    
+    <!-- Conserver les anciens noms de template pour compatibilité -->
+    <t t-name="my_module.ButtonFieldTemplate" t-inherit="my_module.EnhancedMany2OneWidget"/>
+    <t t-name="my_module.FancyMany2One" t-inherit="my_module.EnhancedMany2OneWidget"/>
+</templates>

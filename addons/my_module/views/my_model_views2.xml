@@ -10,8 +10,10 @@
                 </header>
                 <sheet>
                     <group>
-                        <!-- Use the button_field widget -->
-                        <field name="my_model_id" widget="button_field"/>
+                        <enhance_many2one name="my_model_id" field-ref="name" />
+                        
+                        <enhance_many2one name="my_model_id" field-ref="description" />
+                        
                         <field name="name"/>
                     </group>
                 </sheet>

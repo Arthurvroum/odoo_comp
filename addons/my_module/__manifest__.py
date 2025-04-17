@@ -18,14 +18,15 @@
         'web.assets_backend': [
             # CSS d'abord pour éviter un flash de contenu non stylisé
             'my_module/static/src/scss/custom_components.scss',
-            'my_module/static/src/scss/many2one_widget.scss',
+            'my_module/static/src/scss/enhanced_many2one.scss',
             
             # Composants JS dans l'ordre important
             'my_module/static/src/js/c_comp/custom_components.js',
             'my_module/static/src/js/c_comp/custom_tag_parser.js',
             
-            # Autres fichiers JS
-            'my_module/static/src/js/button_field.js',
+            # Composants Many2One
+            'my_module/static/src/js/many_comp/button_field.js',
+            'my_module/static/src/js/many_comp/enhance_many2one_parser.js',
         ],
     },
     'installable': True,
