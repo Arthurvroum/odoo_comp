@@ -2,7 +2,7 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { Component, xml, useState } from "@odoo/owl";
+import { Component, xml, useState, onWillUpdateProps, useEffect } from "@odoo/owl";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { Many2OneField } from "@web/views/fields/many2one/many2one_field";
 
@@ -40,12 +40,52 @@ export class EnhancedMany2OneWidget extends Component {
         this.state = useState({
             linkedRecordData: null,
             loading: false,
-            error: null
+            error: null,
+            lastValue: null,
+            lastRecord: null
         });
         
         // Parse options and load data
         this._parseOptions();
+        
+        // Chargement initial des données
         this._loadLinkedRecordData();
+        
+        // Stocker des références pour détecter les changements
+        this.state.lastValue = this.recordId;
+        this.state.lastRecord = this.props.record;
+        
+        // Écouter les changements de props pour recharger les données
+        onWillUpdateProps((nextProps) => {
+            // Vérifier si la valeur ou le record a changé
+            const nextValue = this._getRecordIdFromProps(nextProps);
+            const currentValue = this.recordId;
+            const recordChanged = nextProps.record !== this.props.record;
+            
+            console.log(`[EnhancedMany2OneWidget] Props update check - Field: ${nextProps.name}, Current ID: ${currentValue}, Next ID: ${nextValue}, Record changed: ${recordChanged}`);
+            
+            // Recharger si la valeur a changé ou si le record a changé (après sauvegarde)
+            if (nextValue !== currentValue || recordChanged) {
+                console.log(`[EnhancedMany2OneWidget] Reloading data for field ${nextProps.name} with ${nextProps["field-ref"] || (nextProps.options?.["field-ref"])}`);
+                // On attend le prochain cycle pour s'assurer que les props sont à jour
+                setTimeout(() => this._loadLinkedRecordData(), 0);
+            }
+        });
+        
+        // Forcer une actualisation périodique en mode édition pour gérer les cas où onWillUpdateProps ne se déclenche pas
+        useEffect(() => {
+            if (!this.isButtonMode) {
+                const interval = setInterval(() => {
+                    if (this.recordId && this.recordId !== this.state.lastValue) {
+                        console.log(`[EnhancedMany2OneWidget] Detected value change during edit mode: ${this.state.lastValue} -> ${this.recordId}`);
+                        this.state.lastValue = this.recordId;
+                        this._loadLinkedRecordData();
+                    }
+                }, 1000); // Vérifier toutes les secondes
+                
+                return () => clearInterval(interval);
+            }
+        });
     }
     
     /**
@@ -71,35 +111,118 @@ export class EnhancedMany2OneWidget extends Component {
         if (this.props['field-ref']) {
             this.options['field-ref'] = this.props['field-ref'];
         }
+        
+        console.log(`[EnhancedMany2OneWidget] Parsed options for ${this.props.name}:`, this.options);
     }
     
     /**
-     * Load data from linked record via ORM service
+     * Obtenir le champ référencé dans field-ref
+     */
+    get referencedField() {
+        if (this.options && this.options['field-ref']) {
+            return this.options['field-ref'];
+        }
+        return 'name'; // Valeur par défaut si non spécifié
+    }
+    
+    /**
+     * Utilitaire pour obtenir l'ID de l'enregistrement à partir des props
+     */
+    _getRecordIdFromProps(props) {
+        if (!props) return false;
+        
+        let value = null;
+        
+        if (props.value) {
+            value = props.value;
+        } else if (props.record?.data && props.name) {
+            value = props.record.data[props.name];
+        }
+        
+        if (!value) return false;
+        
+        if (Array.isArray(value) && value.length > 0) {
+            return value[0];
+        }
+        
+        if (typeof value === 'object' && value.id) {
+            return value.id;
+        }
+        
+        if (!isNaN(parseInt(value))) {
+            return parseInt(value);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Load data from linked record - utilise dynamiquement le champ référencé
      */
     async _loadLinkedRecordData() {
         const recordId = this.recordId;
         const relationModel = this.relationModel;
+        const fieldToFetch = this.referencedField;
         
         if (!recordId || !relationModel || this.state.loading) {
             return;
         }
         
+        console.log(`[EnhancedMany2OneWidget] Loading data for ${this.props.name} - Model: ${relationModel}, ID: ${recordId}, Field: ${fieldToFetch}`);
+        
         try {
             this.state.loading = true;
             
-            // Fields to fetch from linked record
-            const fields = ['name', 'description'];
+            // Toujours inclure 'name' en plus du champ spécifié pour l'affichage de secours
+            const fields = ['name'];
+            
+            // Ajouter le champ référencé s'il n'est pas déjà inclus
+            if (fieldToFetch && fieldToFetch !== 'name') {
+                fields.push(fieldToFetch);
+            }
+            
+            console.log(`[EnhancedMany2OneWidget] Fetching fields: ${fields.join(', ')}`);
+            
             const result = await this.orm.read(relationModel, [recordId], fields);
             
             if (result && result.length > 0) {
                 this.state.linkedRecordData = result[0];
+                console.log(`[EnhancedMany2OneWidget] Loaded data for ${this.props.name}:`, this.state.linkedRecordData);
+            } else {
+                console.log(`[EnhancedMany2OneWidget] No data found for ${this.props.name}`);
+                this.state.linkedRecordData = null;
             }
+            
+            // Mettre à jour la référence de la dernière valeur connue
+            this.state.lastValue = recordId;
+            this.state.lastRecord = this.props.record;
         } catch (error) {
             this.state.error = error;
-            console.error("[EnhancedMany2OneWidget] Error loading data:", error);
+            console.error(`[EnhancedMany2OneWidget] Error loading data for ${this.props.name}:`, error);
         } finally {
             this.state.loading = false;
         }
+    }
+    
+    /**
+     * Get the value of the referenced field
+     */
+    get referencedFieldValue() {
+        const fieldRef = this.referencedField;
+        
+        if (!fieldRef) {
+            return null;
+        }
+        
+        // Get from loaded linked record data
+        if (this.state.linkedRecordData && fieldRef in this.state.linkedRecordData) {
+            const value = this.state.linkedRecordData[fieldRef];
+            console.log(`[EnhancedMany2OneWidget] Referenced field ${fieldRef} value for ${this.props.name}:`, value);
+            return value;
+        }
+        
+        console.log(`[EnhancedMany2OneWidget] Field ${fieldRef} not found in linked data for ${this.props.name}`);
+        return null;
     }
     
     /**
@@ -155,24 +278,6 @@ export class EnhancedMany2OneWidget extends Component {
         }
         
         return String(value);
-    }
-    
-    /**
-     * Get the value of the referenced field
-     */
-    get referencedFieldValue() {
-        const fieldRef = this.options && this.options['field-ref'];
-        
-        if (!fieldRef) {
-            return null;
-        }
-        
-        // Get from loaded linked record data
-        if (this.state.linkedRecordData && fieldRef in this.state.linkedRecordData) {
-            return this.state.linkedRecordData[fieldRef];
-        }
-        
-        return null;
     }
     
     /**

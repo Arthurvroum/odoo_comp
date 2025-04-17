@@ -16,15 +16,34 @@ patch(FormArchParser.prototype, {
             if (enhanceNodes && enhanceNodes.length > 0) {
                 console.log("[enhance_many2one_parser] Found enhance_many2one nodes:", enhanceNodes.length);
                 
+                // Afficher tous les attributs de chaque nœud avant transformation
+                Array.from(enhanceNodes).forEach((node, index) => {
+                    const attrs = {};
+                    for (let i = 0; i < node.attributes.length; i++) {
+                        const attr = node.attributes[i];
+                        attrs[attr.name] = attr.value;
+                    }
+                    console.log(`[enhance_many2one_parser] Node ${index} original attributes:`, JSON.stringify(attrs));
+                });
+                
                 Array.from(enhanceNodes).forEach((node, index) => {
                     // Créer un field à la place de enhance_many2one
                     const fieldNode = arch.ownerDocument.createElement("field");
                     
-                    // Récupérer le nom du champ depuis l'attribut name s'il existe
-                    if (node.hasAttribute("name")) {
-                        fieldNode.setAttribute("name", node.getAttribute("name"));
+                    // Récupérer tous les attributs du nœud original et les copier
+                    for (let i = 0; i < node.attributes.length; i++) {
+                        const attr = node.attributes[i];
+                        fieldNode.setAttribute(attr.name, attr.value);
+                        console.log(`[enhance_many2one_parser] Copying attribute ${attr.name}=${attr.value}`);
+                    }
+                    
+                    // Vérifier spécifiquement l'attribut name
+                    const fieldName = node.getAttribute("name");
+                    if (fieldName) {
+                        console.log(`[enhance_many2one_parser] Setting field name to ${fieldName} for node ${index}`);
+                        fieldNode.setAttribute("name", fieldName);
                     } else {
-                        // Utiliser my_model_id comme champ par défaut si name n'est pas spécifié
+                        console.log(`[enhance_many2one_parser] No name attribute found for node ${index}, using default`);
                         fieldNode.setAttribute("name", "my_model_id");
                     }
                     
@@ -43,9 +62,16 @@ patch(FormArchParser.prototype, {
                         console.log(`[enhance_many2one_parser] Setting field-ref to ${fieldRef} with options=${options}`);
                     }
                     
+                    // Afficher tous les attributs du nœud transformé
+                    const fieldAttrs = {};
+                    for (let i = 0; i < fieldNode.attributes.length; i++) {
+                        const attr = fieldNode.attributes[i];
+                        fieldAttrs[attr.name] = attr.value;
+                    }
+                    console.log(`[enhance_many2one_parser] Node ${index} final attributes:`, JSON.stringify(fieldAttrs));
+                    
                     // Remplacer le nœud enhance_many2one par notre field
                     node.replaceWith(fieldNode);
-                    console.log(`[enhance_many2one_parser] Node ${index} transformed with name=${fieldNode.getAttribute("name")} and options=${fieldNode.getAttribute("options")}`);
                 });
             }
         } catch (error) {
