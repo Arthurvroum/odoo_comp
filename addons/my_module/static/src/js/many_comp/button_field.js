@@ -2,56 +2,124 @@
 
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { Component, xml } from "@odoo/owl";
+import { Component, xml, useState } from "@odoo/owl";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { Many2OneField } from "@web/views/fields/many2one/many2one_field";
 
 /**
- * Enhanced Many2One Field widget that combines button_field and many2one_widget functionalities:
- * - A standard many2one field when in edit mode and state is draft
- * - A navigation button or fancy badge for readonly mode or when state is confirmed
+ * Enhanced Many2One Field widget with stylized button for navigation
+ * 
+ * Features:
+ * - Standard many2one field in edit mode
+ * - Fancy button in readonly mode with hover animation
+ * - Uses 'field-ref' to display specific fields from linked record
+ * - Async loading of linked record data
  */
 export class EnhancedMany2OneWidget extends Component {
-    static props = standardFieldProps;
+    // Définition étendue des props pour accepter toutes les propriétés transmises par Odoo
+    static props = {
+        // Props standard du champ
+        ...standardFieldProps,
+        // Props supplémentaires utilisées par Odoo mais non définies dans standardFieldProps
+        widget: { type: String, optional: true },
+        field: { type: Object, optional: true },
+        "field-ref": { type: String, optional: true },
+        // Prop générique pour accepter d'autres propriétés non listées
+        "*": { type: "*" }
+    };
+    
     static components = { Many2OneField };
     
     setup() {
+        // Services
         this.actionService = useService("action");
         this.notification = useService("notification");
+        this.orm = useService("orm");
         
-        // Debug pour voir toutes les props passées au composant
-        console.log("[EnhancedMany2OneWidget] Props:", this.props);
-        console.log("[EnhancedMany2OneWidget] Options:", this.props.options);
-        console.log("[EnhancedMany2OneWidget] Record:", this.props.record?.data);
+        // State management
+        this.state = useState({
+            linkedRecordData: null,
+            loading: false,
+            error: null
+        });
+        
+        // Parse options and load data
+        this._parseOptions();
+        this._loadLinkedRecordData();
     }
     
+    /**
+     * Parse options from various sources
+     */
+    _parseOptions() {
+        this.options = {};
+        
+        // Parse from JSON string or object
+        if (this.props.options) {
+            if (typeof this.props.options === 'string') {
+                try {
+                    this.options = JSON.parse(this.props.options);
+                } catch (e) {
+                    console.error("[EnhancedMany2OneWidget] Failed to parse options JSON");
+                }
+            } else if (typeof this.props.options === 'object') {
+                this.options = this.props.options;
+            }
+        }
+        
+        // Direct field-ref attribute has priority
+        if (this.props['field-ref']) {
+            this.options['field-ref'] = this.props['field-ref'];
+        }
+    }
+    
+    /**
+     * Load data from linked record via ORM service
+     */
+    async _loadLinkedRecordData() {
+        const recordId = this.recordId;
+        const relationModel = this.relationModel;
+        
+        if (!recordId || !relationModel || this.state.loading) {
+            return;
+        }
+        
+        try {
+            this.state.loading = true;
+            
+            // Fields to fetch from linked record
+            const fields = ['name', 'description'];
+            const result = await this.orm.read(relationModel, [recordId], fields);
+            
+            if (result && result.length > 0) {
+                this.state.linkedRecordData = result[0];
+            }
+        } catch (error) {
+            this.state.error = error;
+            console.error("[EnhancedMany2OneWidget] Error loading data:", error);
+        } finally {
+            this.state.loading = false;
+        }
+    }
+    
+    /**
+     * Get the currently selected value
+     */
     get actualValue() {
         if (this.props.value) {
             return this.props.value;
         }
         
-        if (this.props.record?.data && this.props.name && this.props.record.data[this.props.name]) {
+        if (this.props.record?.data && this.props.name) {
             return this.props.record.data[this.props.name];
         }
         
         return null;
     }
     
-    get displayName() {
-        const value = this.actualValue;
-        if (!value) return "";
-        
-        if (Array.isArray(value) && value.length > 1) {
-            return value[1] || "Unnamed";
-        }
-        
-        if (typeof value === 'object' && value.display_name) {
-            return value.display_name;
-        }
-        
-        return String(value);
-    }
-    
+    /**
+     * Extract ID from the value
+     */
     get recordId() {
         const value = this.actualValue;
         if (!value) return false;
@@ -71,12 +139,71 @@ export class EnhancedMany2OneWidget extends Component {
         return false;
     }
     
+    /**
+     * Get display name of selected record
+     */
+    get displayName() {
+        const value = this.actualValue;
+        if (!value) return "";
+        
+        if (Array.isArray(value) && value.length > 1) {
+            return value[1] || "Unnamed";
+        }
+        
+        if (typeof value === 'object' && value.display_name) {
+            return value.display_name;
+        }
+        
+        return String(value);
+    }
+    
+    /**
+     * Get the value of the referenced field
+     */
+    get referencedFieldValue() {
+        const fieldRef = this.options && this.options['field-ref'];
+        
+        if (!fieldRef) {
+            return null;
+        }
+        
+        // Get from loaded linked record data
+        if (this.state.linkedRecordData && fieldRef in this.state.linkedRecordData) {
+            return this.state.linkedRecordData[fieldRef];
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Get the text to display on hover
+     */
+    get alternateDisplayName() {
+        if (this.state.loading) {
+            return "Chargement...";
+        }
+        
+        if (this.state.error) {
+            return "Erreur de chargement";
+        }
+        
+        const refValue = this.referencedFieldValue;
+        if (refValue !== null && refValue !== undefined) {
+            return String(refValue);
+        }
+        
+        return this.displayName;
+    }
+    
+    /**
+     * Check if the widget has a value
+     */
     get hasValue() {
         return Boolean(this.recordId);
     }
     
     /**
-     * Determine if the widget should be in button/badge mode
+     * Determine if widget should be in button mode
      */
     get isButtonMode() {
         if (this.props.readonly) {
@@ -91,7 +218,7 @@ export class EnhancedMany2OneWidget extends Component {
     }
     
     /**
-     * Get the relation model (target model) for navigation
+     * Get the relation model
      */
     get relationModel() {
         if (this.props.relation) {
@@ -106,88 +233,11 @@ export class EnhancedMany2OneWidget extends Component {
     }
     
     /**
-     * Get a user-friendly model name from the technical name
-     */
-    get modelDisplayName() {
-        const model = this.relationModel;
-        if (!model) return "";
-        
-        // Convertir le nom technique en nom convivial
-        // Ex: 'res.partner' devient 'Partenaire'
-        const parts = model.split('.');
-        if (parts.length > 0) {
-            const lastPart = parts[parts.length - 1];
-            // Mettre une majuscule et remplacer les underscores par des espaces
-            return lastPart.charAt(0).toUpperCase() + 
-                   lastPart.slice(1).replace(/_/g, ' ');
-        }
-        
-        return model;
-    }
-    
-    /**
-     * Récupérer la valeur du champ référencé par field-ref si disponible
-     */
-    get referencedFieldValue() {
-        // Récupérer field-ref depuis différents endroits possibles
-        let fieldRef = null;
-        
-        // 1. Vérifier dans les options (format JSON dans l'attribut options)
-        if (this.props.options && this.props.options['field-ref']) {
-            fieldRef = this.props.options['field-ref'];
-            console.log("[EnhancedMany2OneWidget] Found field-ref in options:", fieldRef);
-        }
-        // 2. Vérifier dans les props directes
-        else if (this.props['field-ref']) {
-            fieldRef = this.props['field-ref'];
-            console.log("[EnhancedMany2OneWidget] Found field-ref in props:", fieldRef);
-        }
-        // 3. Vérifier dans les attributs
-        else if (this.props.attrs && this.props.attrs['field-ref']) {
-            fieldRef = this.props.attrs['field-ref'];
-            console.log("[EnhancedMany2OneWidget] Found field-ref in attrs:", fieldRef);
-        }
-        // 4. Vérifier fieldRef en camelCase
-        else if (this.props.fieldRef) {
-            fieldRef = this.props.fieldRef;
-            console.log("[EnhancedMany2OneWidget] Found fieldRef in props:", fieldRef);
-        }
-        
-        // Si nous avons un fieldRef et un record
-        if (fieldRef && this.props.record && this.props.record.data) {
-            console.log(`[EnhancedMany2OneWidget] Looking for field ${fieldRef} in record:`, this.props.record.data);
-            const value = this.props.record.data[fieldRef];
-            console.log(`[EnhancedMany2OneWidget] Value for field ${fieldRef}:`, value);
-            return value;
-        }
-        
-        console.log("[EnhancedMany2OneWidget] No referenced field found");
-        return null;
-    }
-    
-    /**
-     * Récupérer le nom alternatif à afficher lors du survol
-     */
-    get alternateDisplayName() {
-        // Essayer d'utiliser d'abord la valeur du champ référencé
-        const refValue = this.referencedFieldValue;
-        console.log("[EnhancedMany2OneWidget] Referenced field value for display:", refValue);
-        
-        if (refValue !== null && refValue !== undefined) {
-            return String(refValue);
-        }
-        
-        // Sinon utiliser le nom du modèle
-        return this.displayName;
-    }
-    
-    /**
-     * Navigate to the record when clicked
+     * Handle button click
      */
     onButtonClick() {
         if (this.recordId) {
-            const target = this.openTarget;
-            console.log(`[EnhancedMany2OneWidget] Opening record ${this.recordId} of model ${this.relationModel} with target ${target}`);
+            const target = (this.options && this.options.open_target) || "current";
             
             this.actionService.doAction({
                 type: "ir.actions.act_window",
@@ -197,17 +247,15 @@ export class EnhancedMany2OneWidget extends Component {
                 target: target
             });
             
-            // Notification lorsqu'on clique sur le bouton
             this.notification.add(
                 `Ouverture de ${this.alternateDisplayName}`, 
                 { type: "info" }
             );
-        } else {
-            console.log("[EnhancedMany2OneWidget] Cannot open: no recordId");
         }
     }
 }
 
+// Template for the widget
 EnhancedMany2OneWidget.template = xml`
 <t>
     <t t-if="isButtonMode">
@@ -215,25 +263,57 @@ EnhancedMany2OneWidget.template = xml`
             <button class="button-57" t-on-click="onButtonClick" 
                     t-att-data-id="recordId" t-att-data-model="relationModel">
                 <span class="text">Détail</span>
-                <span><t t-esc="displayName"/></span>
+                <span><t t-esc="alternateDisplayName"/></span>
             </button>
         </t>
         <t t-else="">
-            <span class="o_field_empty">Empty</span>
+            <span class="o_field_empty">Non défini</span>
         </t>
     </t>
     <t t-else="">
-        <!-- Use standard Many2One field in edit mode -->
         <Many2OneField t-props="props"/>
     </t>
 </t>
 `;
 
-// Register with support information
+// Register the field widget
 registry.category("fields").add("enhanced_many2one", {
     component: EnhancedMany2OneWidget,
     supportedTypes: ["many2one"],
-    isEmpty: (props) => !props.value
+    isEmpty: (props) => !props.value,
+    extractProps: (fieldInfo, dynamicInfo) => {
+        const props = {
+            ...fieldInfo,
+            ...dynamicInfo,
+        };
+        
+        // Extract options from JSON
+        if (fieldInfo.attrs && fieldInfo.attrs.options) {
+            try {
+                props.options = JSON.parse(fieldInfo.attrs.options);
+            } catch (e) {
+                props.options = {};
+            }
+        }
+        
+        // Copy field-ref attribute directly
+        if (fieldInfo.attrs && fieldInfo.attrs["field-ref"]) {
+            props["field-ref"] = fieldInfo.attrs["field-ref"];
+            
+            if (!props.options) props.options = {};
+            props.options["field-ref"] = fieldInfo.attrs["field-ref"];
+        }
+        
+        return props;
+    }
+});
+
+// Alias for backward compatibility
+registry.category("fields").add("button_field", {
+    component: EnhancedMany2OneWidget,
+    supportedTypes: ["many2one"],
+    isEmpty: (props) => !props.value,
+    extractProps: registry.category("fields").get("enhanced_many2one").extractProps
 });
 
 export default EnhancedMany2OneWidget;

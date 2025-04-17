@@ -19,6 +19,7 @@ class model2(models.Model):
     _description = 'My Custom Model2'
     
     my_model_id = fields.Many2one('my_module.my_model', 'My Model', required=True)
+    model2_field = fields.Many2one('my_module.my_model', 'Model2 Field', required=True)
     name = fields.Char('Name', required=True)
     state = fields.Selection([
         ('draft', 'Draft'),

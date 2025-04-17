@@ -12,7 +12,7 @@
                     <group>
                         <enhance_many2one name="my_model_id" field-ref="name" />
                         
-                        <enhance_many2one name="my_model_id" field-ref="description" />
+                        <enhance_many2one name="model2_field" field-ref="description" />
                         
                         <field name="name"/>
                     </group>
