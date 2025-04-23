@@ -3,19 +3,25 @@ from odoo import models, fields, api
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
     
-    attachment_ids = fields.Many2many('ir.attachment', 'purchase_order_attachment_rel', 
-                                      'purchase_id', 'attachment_id', 
-                                      string='Documents')
+    attachment_count = fields.Integer(compute='_compute_attachment_count', string='Nombre de Documents')
+    attachment_ids = fields.One2many('ir.attachment', 'res_id', domain=[('res_model', '=', 'purchase.order')], 
+                                     string='Documents', readonly=False)
     
-    def action_add_attachment(self):
-        """Méthode pour ajouter une pièce jointe (définie uniquement pour éviter les erreurs)"""
+    def _compute_attachment_count(self):
+        for purchase in self:
+            purchase.attachment_count = self.env['ir.attachment'].search_count([
+                ('res_model', '=', 'purchase.order'),
+                ('res_id', '=', purchase.id)
+            ])
+    
+    def action_open_attachments(self):
         self.ensure_one()
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Ajouter un document',
+            'name': 'Documents',
+            'domain': [('res_model', '=', 'purchase.order'), ('res_id', '=', self.id)],
             'res_model': 'ir.attachment',
-            'view_mode': 'form',
-            'target': 'new',
+            'type': 'ir.actions.act_window',
+            'view_mode': 'tree,form',
             'context': {
                 'default_res_model': 'purchase.order',
                 'default_res_id': self.id,

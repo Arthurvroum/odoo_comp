@@ -1,41 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Vue pour ajouter le champ d'import de documents sous le fournisseur -->
+    <!-- Vue pour ajouter le champ d'import de documents sous le fournisseur et les onglets -->
     <record id="purchase_order_form_document_import" model="ir.ui.view">
         <field name="name">purchase.order.form.document.import</field>
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
+            <!-- Ajoute le champ documents sous le fournisseur -->
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="attachment_ids" widget="many2many_binary" string="Documents PDF" 
                        options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
                        context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
             </xpath>
-        </field>
-    </record>
-
-    <!-- Vue pour modifier la section chatter et créer de vrais onglets -->
-    <record id="purchase_order_form_chatter_tabs" model="ir.ui.view">
-        <field name="name">purchase.order.form.chatter.tabs</field>
-        <field name="model">purchase.order</field>
-        <field name="inherit_id" ref="purchase.purchase_order_form"/>
-        <field name="priority">99</field>
-        <field name="arch" type="xml">
-            <xpath expr="//div[hasclass('oe_chatter')]" position="replace">
-                <div class="oe_chatter" style="margin-top: 10px;">
-                    <notebook>
-                        <page string="Chat" name="chat_page">
-                            <!-- Contenu du chatter -->
-                            <field name="message_follower_ids" widget="mail_followers"/>
-                            <field name="activity_ids" widget="mail_activity"/>
-                            <field name="message_ids" widget="mail_thread"/>
-                        </page>
-                        <page string="Documents" name="documents_page">
-                            <field name="attachment_ids" widget="many2many_binary" 
-                                   options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
-                                   context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
-                        </page>
-                    </notebook>
+            
+            <!-- Ajoute les onglets juste avant le chatter -->
+            <xpath expr="//div[hasclass('oe_chatter')]" position="before">
+                <div class="nav nav-tabs mb-3" role="tablist">
+                    <a id="tab_chat" class="nav-item nav-link active" href="#" data-toggle="tab" role="tab">Messages</a>
+                    <a id="tab_docs" class="nav-item nav-link" href="#" data-toggle="tab" role="tab">Documents</a>
+                </div>
+                
+                <!-- Zone pour les documents (masquée par défaut) -->
+                <div id="documents_area" style="display:none; padding: 15px; margin-bottom: 20px;">
+                    <h3 class="mb-3">Documents attachés</h3>
+                    <field name="attachment_ids" widget="many2many_binary" 
+                           options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
+                           context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
                 </div>
             </xpath>
         </field>
