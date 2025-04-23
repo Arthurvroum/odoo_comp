@@ -7,6 +7,44 @@ import { FormArchParser } from "@web/views/form/form_arch_parser";
 // Stocker une référence à la fonction originale
 const originalParse = FormArchParser.prototype.parse;
 
+/**
+ * Fusionne deux objets d'options, en gérant correctement les formats JSON
+ * @param {string|object} originalOptions - Les options originales (peut être une chaîne JSON ou un objet)
+ * @param {object} newOptions - Les nouvelles options à ajouter
+ * @returns {object} - L'objet fusionné
+ */
+function mergeOptions(originalOptions, newOptions) {
+    let result = {};
+    
+    // Traiter les options originales
+    if (typeof originalOptions === 'string') {
+        try {
+            result = JSON.parse(originalOptions);
+        } catch (e) {
+            console.warn("[enhance_many2one_parser] Erreur parsing JSON options:", originalOptions);
+            // Si le JSON est invalide, essayer de le corriger - gestion basique
+            if (originalOptions.includes('refreshInterval')) {
+                try {
+                    // Remplacer les simples quotes par des doubles quotes
+                    const fixedJson = originalOptions.replace(/'/g, '"');
+                    result = JSON.parse(fixedJson);
+                } catch (e2) {
+                    console.warn("[enhance_many2one_parser] Impossible de corriger le JSON:", e2);
+                }
+            }
+        }
+    } else if (originalOptions && typeof originalOptions === 'object') {
+        result = { ...originalOptions };
+    }
+    
+    // Ajouter les nouvelles options
+    if (newOptions && typeof newOptions === 'object') {
+        result = { ...result, ...newOptions };
+    }
+    
+    return result;
+}
+
 // Patching du parser pour transformer les balises <enhance_many2one> en <field>
 patch(FormArchParser.prototype, {
     parse(arch, ...args) {
@@ -30,11 +68,22 @@ patch(FormArchParser.prototype, {
                     // Créer un field à la place de enhance_many2one
                     const fieldNode = arch.ownerDocument.createElement("field");
                     
+                    // Récupérer les options existantes s'il y en a
+                    let originalOptions = node.getAttribute("options");
+                    let mergedOptions = originalOptions ? mergeOptions(originalOptions, {}) : {};
+                    
                     // Récupérer tous les attributs du nœud original et les copier
+                    // On ne copie pas les attributs spéciaux automatiquement
                     for (let i = 0; i < node.attributes.length; i++) {
                         const attr = node.attributes[i];
-                        fieldNode.setAttribute(attr.name, attr.value);
-                        console.log(`[enhance_many2one_parser] Copying attribute ${attr.name}=${attr.value}`);
+                        const attrName = attr.name;
+                        const attrValue = attr.value;
+                        
+                        // Ne pas copier refreshInterval pour les nodes qui ne l'ont pas explicitement
+                        if (attrName !== 'refreshInterval' && attrName !== 'field-ref') {
+                            fieldNode.setAttribute(attrName, attrValue);
+                            console.log(`[enhance_many2one_parser] Copying attribute ${attrName}=${attrValue}`);
+                        }
                     }
                     
                     // Vérifier spécifiquement l'attribut name
@@ -50,16 +99,35 @@ patch(FormArchParser.prototype, {
                     // Ajouter le widget enhanced_many2one
                     fieldNode.setAttribute("widget", "enhanced_many2one");
                     
-                    // Transférer l'attribut field-ref via options pour garantir qu'il est correctement passé au widget
+                    // Traiter spécifiquement l'attribut field-ref
                     if (node.hasAttribute("field-ref")) {
                         const fieldRef = node.getAttribute("field-ref");
-                        const options = JSON.stringify({ 'field-ref': fieldRef });
-                        fieldNode.setAttribute("options", options);
-                        
-                        // Également conserver l'attribut direct pour compatibilité
-                        fieldNode.setAttribute("field-ref", fieldRef);
-                        
-                        console.log(`[enhance_many2one_parser] Setting field-ref to ${fieldRef} with options=${options}`);
+                        mergedOptions["field-ref"] = fieldRef;
+                        // Ne plus ajouter l'attribut direct pour éviter les confusions
+                    }
+                    
+                    // Traiter spécifiquement l'attribut refreshInterval
+                    if (node.hasAttribute("refreshInterval")) {
+                        const refreshInterval = node.getAttribute("refreshInterval");
+                        try {
+                            mergedOptions["refreshInterval"] = parseInt(refreshInterval, 10);
+                            // Ajouter refreshInterval directement sur le nœud (pour debug)
+                            fieldNode.setAttribute("refreshInterval", refreshInterval);
+                            console.log(`[enhance_many2one_parser] Node ${index}: Adding refreshInterval=${refreshInterval}`);
+                        } catch (e) {
+                            console.error(`[enhance_many2one_parser] Invalid refreshInterval value: ${refreshInterval}`);
+                        }
+                    } else {
+                        // S'assurer qu'il n'y a pas de refreshInterval pour ce nœud
+                        delete mergedOptions.refreshInterval;
+                        console.log(`[enhance_many2one_parser] Node ${index}: No refreshInterval defined`);
+                    }
+                    
+                    // Définir les options fusionnées
+                    if (Object.keys(mergedOptions).length > 0) {
+                        const optionsStr = JSON.stringify(mergedOptions);
+                        fieldNode.setAttribute("options", optionsStr);
+                        console.log(`[enhance_many2one_parser] Node ${index} options: ${optionsStr}`);
                     }
                     
                     // Afficher tous les attributs du nœud transformé
@@ -83,8 +151,10 @@ patch(FormArchParser.prototype, {
     }
 });
 
-console.log("[enhance_many2one_parser] Custom enhance_many2one tag parser registered");
-
-export const enhanceManyOneParser = {
-    name: "enhance_many2one_parser"
+export default {
+    name: "enhance_many2one_parser",
+    priority: 30,
+    condition: arch => {
+        return arch.querySelector("enhance_many2one") !== null;
+    },
 };

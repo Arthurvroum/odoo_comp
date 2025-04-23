@@ -14,6 +14,7 @@ import { Many2OneField } from "@web/views/fields/many2one/many2one_field";
  * - Fancy button in readonly mode with hover animation
  * - Uses 'field-ref' to display specific fields from linked record
  * - Async loading of linked record data
+ * - Periodic auto-refresh of linked data
  */
 export class EnhancedMany2OneWidget extends Component {
     // Définition étendue des props pour accepter toutes les propriétés transmises par Odoo
@@ -24,6 +25,8 @@ export class EnhancedMany2OneWidget extends Component {
         widget: { type: String, optional: true },
         field: { type: Object, optional: true },
         "field-ref": { type: String, optional: true },
+        // Support direct de l'attribut refreshInterval 
+        "refreshInterval": { type: Number, optional: true },
         // Prop générique pour accepter d'autres propriétés non listées
         "*": { type: "*" }
     };
@@ -42,7 +45,8 @@ export class EnhancedMany2OneWidget extends Component {
             loading: false,
             error: null,
             lastValue: null,
-            lastRecord: null
+            lastRecord: null,
+            lastRefreshTime: null
         });
         
         // Parse options and load data
@@ -86,6 +90,65 @@ export class EnhancedMany2OneWidget extends Component {
                 return () => clearInterval(interval);
             }
         });
+        
+        // Rafraîchissement périodique des données - indépendant du mode (édition ou lecture)
+        useEffect(() => {
+            // Déterminer l'intervalle de rafraîchissement (en millisecondes)
+            // Peut être configuré via options ou utilise une valeur par défaut
+            const refreshInterval = this.getRefreshInterval();
+            
+            if (refreshInterval <= 0) {
+                // Pas de rafraîchissement automatique si l'intervalle est <= 0
+                return;
+            }
+            
+            console.log(`[EnhancedMany2OneWidget] Setting up auto-refresh for ${this.props.name} every ${refreshInterval/1000} seconds`);
+            
+            // Créer un intervalle qui rechargera les données périodiquement
+            const intervalId = setInterval(() => {
+                if (this.recordId) {
+                    console.log(`[EnhancedMany2OneWidget] Auto-refreshing data for ${this.props.name}`);
+                    this._loadLinkedRecordData();
+                    this.state.lastRefreshTime = new Date();
+                }
+            }, refreshInterval);
+            
+            // Retourner une fonction de nettoyage qui sera appelée lors de la destruction du composant
+            return () => {
+                console.log(`[EnhancedMany2OneWidget] Cleaning up auto-refresh for ${this.props.name}`);
+                clearInterval(intervalId);
+            };
+        });
+    }
+    
+    /**
+     * Obtenir l'intervalle de rafraîchissement à partir des options
+     * @returns {number} Intervalle en millisecondes (0 = pas de rafraîchissement)
+     */
+    getRefreshInterval() {
+        // Par défaut: pas de rafraîchissement automatique
+        let interval = 0;
+        
+        // Vérifier si ce champ a l'attribut refreshInterval explicitement défini
+        // Si refreshInterval n'est pas défini pour ce champ, retourner 0 (pas d'actualisation)
+        const hasRefreshAttribute = this.props.refreshInterval !== undefined || 
+                                   (this.options && this.options.refreshInterval !== undefined);
+        
+        if (!hasRefreshAttribute) {
+            console.log(`[EnhancedMany2OneWidget] No refreshInterval defined for ${this.props.name}, auto-refresh disabled`);
+            return 0;
+        }
+        
+        // Priorité 1: Vérifier l'attribut refreshInterval direct
+        if (this.props.refreshInterval !== undefined) {
+            const directInterval = parseInt(this.props.refreshInterval, 10);
+            if (!isNaN(directInterval)) {
+                console.log(`[EnhancedMany2OneWidget] Using direct refreshInterval attribute: ${directInterval} seconds for ${this.props.name}`);
+                return directInterval * 1000; // Convertir en millisecondes
+            }
+        }
+        
+        return interval;
     }
     
     /**
@@ -100,10 +163,10 @@ export class EnhancedMany2OneWidget extends Component {
                 try {
                     this.options = JSON.parse(this.props.options);
                 } catch (e) {
-                    console.error("[EnhancedMany2OneWidget] Failed to parse options JSON");
+                    console.error(`[EnhancedMany2OneWidget] Failed to parse options JSON for ${this.props.name}:`, e);
                 }
             } else if (typeof this.props.options === 'object') {
-                this.options = this.props.options;
+                this.options = { ...this.props.options };
             }
         }
         
@@ -112,7 +175,13 @@ export class EnhancedMany2OneWidget extends Component {
             this.options['field-ref'] = this.props['field-ref'];
         }
         
-        console.log(`[EnhancedMany2OneWidget] Parsed options for ${this.props.name}:`, this.options);
+        // Direct refreshInterval attribute has priority - mais uniquement si défini explicitement
+        if (this.props.refreshInterval !== undefined) {
+            this.options.refreshInterval = parseInt(this.props.refreshInterval, 10);
+        }
+        
+        // Debug - Log source component name and options
+        console.log(`[EnhancedMany2OneWidget] Parsed options for ${this.props.name}:`, JSON.stringify(this.options));
     }
     
     /**

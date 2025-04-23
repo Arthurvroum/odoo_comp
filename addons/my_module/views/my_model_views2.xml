@@ -10,7 +10,7 @@
                 </header>
                 <sheet>
                     <group>
-                        <enhance_many2one name="my_model_id" field-ref="name" />
+                        <enhance_many2one name="my_model_id" field-ref="name" refreshInterval="5" />
                         
                         <enhance_many2one name="model2_field" field-ref="description" />
                         
