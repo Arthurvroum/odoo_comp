@@ -13,25 +13,34 @@
                        context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
             </xpath>
             
-            <!-- Ajoute les onglets juste avant le chatter -->
+            <!-- Ajoute le conteneur principal avec CSS pour positionner les onglets verticaux -->
             <xpath expr="//div[hasclass('oe_chatter')]" position="before">
-                <div class="o_purchase_tabs">
-                    <ul class="nav nav-tabs mb-3" role="tablist">
-                        <li class="nav-item">
-                            <a id="tab_chat" class="nav-link active" href="#" role="tab">Messages</a>
-                        </li>
-                        <li class="nav-item">
-                            <a id="tab_docs" class="nav-link" href="#" role="tab">Documents</a>
-                        </li>
-                    </ul>
+                <div class="d-flex align-items-start mb-3">
+                    <!-- Onglets verticaux à gauche avec style amélioré -->
+                    <div class="vertical-tabs" style="display: flex; flex-direction: column; min-width: 150px; border-right: 1px solid #dee2e6;">
+                        <div id="tab_chat" class="vertical-tab active" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid #007bff; display: flex; align-items: center; background-color: #e9f5ff; font-weight: bold;">
+                            <i class="fa fa-comments" style="margin-right: 10px; width: 20px; text-align: center;"></i>
+                            <span>Messages</span>
+                        </div>
+                        <div id="tab_docs" class="vertical-tab" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid transparent; display: flex; align-items: center;">
+                            <i class="fa fa-file-text-o" style="margin-right: 10px; width: 20px; text-align: center;"></i>
+                            <span>Documents</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Zone pour les documents (masquée par défaut) -->
+                    <div id="docs_content" class="tab-content" style="display:none; flex-grow: 1; padding: 0 15px;">
+                        <h4 class="mb-3">Documents attachés</h4>
+                        <field name="attachment_ids" widget="many2many_binary" 
+                              options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
+                              context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
+                    </div>
                 </div>
-                
-                <!-- Zone pour les documents (masquée par défaut) -->
-                <div id="documents_area" style="display:none; padding: 15px; margin-bottom: 20px;">
-                    <field name="attachment_ids" widget="many2many_binary" 
-                           options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
-                           context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
-                </div>
+            </xpath>
+            
+            <!-- Ajouter un ID au chatter pour pouvoir le manipuler en JS -->
+            <xpath expr="//div[hasclass('oe_chatter')]" position="attributes">
+                <attribute name="id">chat_content</attribute>
             </xpath>
         </field>
     </record>
