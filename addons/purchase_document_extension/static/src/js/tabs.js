@@ -1,28 +1,29 @@
-// Simple script pour gérer les onglets de chat et documents
+// Script simple pour gérer les onglets entre chat et documents
 odoo.define('purchase_document_extension.tabs', [], function (require) {
     'use strict';
-    
-    // Fonction pour initialiser les onglets quand le DOM est chargé
+
+    // Attend que le document soit complètement chargé
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialiser les onglets avec un délai pour s'assurer que tout est chargé
-        setTimeout(initTabSystem, 1000);
+        // Démarre la vérification périodique
+        setInterval(checkTabElements, 1000);
     });
-    
-    /**
-     * Initialise le système d'onglets
-     */
-    function initTabSystem() {
-        var tabChat = document.getElementById('tab_chat');
-        var tabDocs = document.getElementById('tab_docs');
-        var chatter = document.querySelector('.oe_chatter');
-        var docsArea = document.getElementById('documents_area');
+
+    // Vérifie si les éléments des onglets existent et les initialise
+    function checkTabElements() {
+        const tabChat = document.getElementById('tab_chat');
+        const tabDocs = document.getElementById('tab_docs');
+        const chatter = document.querySelector('.oe_chatter');
+        const docsArea = document.getElementById('documents_area');
         
-        // Si les éléments ne sont pas encore disponibles, réessayer plus tard
-        if (!tabChat || !tabDocs || !chatter || !docsArea) {
-            console.log("Éléments d'onglets non trouvés, réessai dans 1s");
-            setTimeout(initTabSystem, 1000);
-            return;
+        if (tabChat && tabDocs && chatter && docsArea) {
+            initTabs(tabChat, tabDocs, chatter, docsArea);
         }
+    }
+    
+    // Initialise les onglets s'ils n'ont pas déjà été initialisés
+    function initTabs(tabChat, tabDocs, chatter, docsArea) {
+        // Évite les doublons d'écouteurs d'événements
+        if (tabChat.hasListener) return;
         
         // Fonction pour basculer entre les onglets
         function switchTab(activeTab) {
@@ -44,19 +45,15 @@ odoo.define('purchase_document_extension.tabs', [], function (require) {
             e.preventDefault();
             switchTab('chat');
         });
+        tabChat.hasListener = true;
         
         tabDocs.addEventListener('click', function(e) {
             e.preventDefault();
             switchTab('docs');
         });
+        tabDocs.hasListener = true;
         
         // Afficher le chat par défaut
         switchTab('chat');
-        
-        console.log("Système d'onglets initialisé");
     }
-    
-    return {
-        initTabSystem: initTabSystem
-    };
 });

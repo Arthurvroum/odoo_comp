@@ -15,14 +15,19 @@
             
             <!-- Ajoute les onglets juste avant le chatter -->
             <xpath expr="//div[hasclass('oe_chatter')]" position="before">
-                <div class="nav nav-tabs mb-3" role="tablist">
-                    <a id="tab_chat" class="nav-item nav-link active" href="#" data-toggle="tab" role="tab">Messages</a>
-                    <a id="tab_docs" class="nav-item nav-link" href="#" data-toggle="tab" role="tab">Documents</a>
+                <div class="o_purchase_tabs">
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <a id="tab_chat" class="nav-link active" href="#" role="tab">Messages</a>
+                        </li>
+                        <li class="nav-item">
+                            <a id="tab_docs" class="nav-link" href="#" role="tab">Documents</a>
+                        </li>
+                    </ul>
                 </div>
                 
                 <!-- Zone pour les documents (masquée par défaut) -->
                 <div id="documents_area" style="display:none; padding: 15px; margin-bottom: 20px;">
-                    <h3 class="mb-3">Documents attachés</h3>
                     <field name="attachment_ids" widget="many2many_binary" 
                            options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
                            context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>

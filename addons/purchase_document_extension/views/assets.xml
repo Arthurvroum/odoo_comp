@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <template id="assets_backend" name="purchase_document_extension assets" inherit_id="web.assets_backend">
-        <xpath expr="." position="inside">
-            <script type="text/javascript" src="/purchase_document_extension/static/src/js/purchase_tabs.js"></script>
-            <link rel="stylesheet" type="text/css" href="/purchase_document_extension/static/src/css/purchase_tabs.css"/>
-        </xpath>
-    </template>
-</odoo>
