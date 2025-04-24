@@ -14,38 +14,33 @@
                        context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
             </xpath>
             
-            <!-- Ajoute le conteneur principal avec CSS responsive -->
-            <xpath expr="//div[hasclass('oe_chatter')]" position="before">
-                <div class="adaptive-tabs mb-3 d-flex">
-                    <!-- Onglets avec style adaptable -->
-                    <div id="tabs_container" class="tabs-container" style="display: flex; flex-direction: column; min-width: 150px; border-right: 1px solid #dee2e6; margin-right: 15px;">
-                        <div id="tab_chat" class="tab-item active" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid #007bff; display: flex; align-items: center; background-color: #e9f5ff; font-weight: bold; margin-bottom: 5px;">
-                            <i class="fa fa-comments" style="margin-right: 10px; width: 20px; text-align: center;"></i>
+            <!-- Ajouter les onglets au-dessus du formulaire, alignés à droite -->
+            <xpath expr="//sheet" position="before">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; margin-top: 5px; padding-right: 15px;">
+                    <div id="tabs_container" style="display: flex; background-color: white; border: 1px solid #dee2e6; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <div id="tab_chat" class="tab-item active" style="padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; background-color: #e9f5ff; font-weight: bold; display: flex; align-items: center; margin-right: 1px;">
+                            <i class="fa fa-comments" style="margin-right: 5px; width: 20px; text-align: center;"></i>
                             <span>Messages</span>
                         </div>
-                        <div id="tab_docs" class="tab-item" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid transparent; display: flex; align-items: center;">
-                            <i class="fa fa-file-text-o" style="margin-right: 10px; width: 20px; text-align: center;"></i>
+                        <div id="tab_docs" class="tab-item" style="padding: 10px 15px; cursor: pointer; transition: all 0.3s ease;; display: flex; align-items: center;">
+                            <i class="fa fa-file-text-o" style="margin-right: 5px; width: 20px; text-align: center;"></i>
                             <span>Documents</span>
                         </div>
                     </div>
-                    
-                    <!-- Zone pour les documents avec PDF viewer agrandi -->
-                    <div id="docs_content" class="tab-content" style="display:none; flex-grow: 1; padding: 0 15px; width: 100%;">
-                        <div class="docs-container">
-                            <div class="docs-header mb-3 d-flex justify-content-between align-items-center">
-                                <h4>Documents attachés</h4>
-                                <!-- Widget d'importation plus discret -->
-                                <div class="upload-button">
-                                    <field name="attachment_ids" widget="many2many_binary" 
-                                          options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
-                                          context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
-                                </div>
-                            </div>
-                            
-                            <!-- PDF Viewer Container agrandi -->
-                            <div id="pdf_viewer_container" class="mt-3" style="width: 100%;">
-                                <!-- PDFs seront chargés ici dynamiquement -->
-                            </div>
+                </div>
+            </xpath>
+            
+            <!-- Ajouter la zone pour les documents PDF avant le chatter -->
+            <xpath expr="//div[hasclass('oe_chatter')]" position="before">
+                <!-- Zone pour les documents avec PDF viewer -->
+                <div id="docs_content" style="display:none; width: 50%; margin-bottom: 20px;">
+                    <div class="docs-container">
+                        <div class="docs-header mb-3 d-flex justify-content-between align-items-center">
+                        </div>
+                        
+                        <!-- PDF Viewer Container -->
+                        <div id="pdf_viewer_container" class="mt-3" style="width: 100%;">
+                            <!-- PDFs seront chargés ici dynamiquement -->
                         </div>
                     </div>
                 </div>

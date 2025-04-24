@@ -48,9 +48,11 @@ odoo.define('purchase_document_extension.tabs', [], function (require) {
                 tabDocs.classList.remove('active');
                 tabChat.style.borderLeftColor = '#007bff';
                 tabChat.style.backgroundColor = '#e9f5ff';
+                tabChat.style.borderBottom = '3px solid #007bff';
                 tabChat.style.fontWeight = 'bold';
                 tabDocs.style.borderLeftColor = 'transparent';
                 tabDocs.style.backgroundColor = 'transparent';
+                tabDocs.style.borderBottom = 'transparent';
                 tabDocs.style.fontWeight = 'normal';
                 chatter.style.display = '';
                 docsContent.style.display = 'none';
@@ -59,9 +61,11 @@ odoo.define('purchase_document_extension.tabs', [], function (require) {
                 tabDocs.classList.add('active');
                 tabDocs.style.borderLeftColor = '#007bff';
                 tabDocs.style.backgroundColor = '#e9f5ff';
+                tabDocs.style.borderBottom = '3px solid #007bff';
                 tabDocs.style.fontWeight = 'bold';
                 tabChat.style.borderLeftColor = 'transparent';
                 tabChat.style.backgroundColor = 'transparent';
+                tabChat.style.borderBottom = 'transparent';
                 tabChat.style.fontWeight = 'normal';
                 chatter.style.display = 'none';
                 docsContent.style.display = '';
