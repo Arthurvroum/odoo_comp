@@ -33,7 +33,7 @@
             <!-- Ajouter la zone pour les documents PDF avant le chatter -->
             <xpath expr="//div[hasclass('oe_chatter')]" position="before">
                 <!-- Zone pour les documents avec PDF viewer -->
-                <div id="docs_content" style="display:none; width: 50%; margin-bottom: 20px;">
+                <div id="docs_content" style="display:none; width: 34.55%; margin-bottom: 20px;">
                     <div class="docs-container">
                         <div class="docs-header mb-3 d-flex justify-content-between align-items-center">
                         </div>
