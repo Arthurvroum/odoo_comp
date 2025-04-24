@@ -40,106 +40,39 @@ odoo.define('purchase_document_extension.pdf_viewer', [], function (require) {
         }, 500);
     }
     
-    // Charge les pièces jointes depuis le serveur
+    // Charge le PDF fusionné depuis le serveur
     function loadAttachments(pdfContainer) {
-        // Vider le conteneur avant de charger les nouveaux documents
-        pdfContainer.innerHTML = '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Chargement des documents...</div>';
-        
-        // Récupérer l'ID de la commande d'achat depuis l'URL
+        pdfContainer.innerHTML = '<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Chargement du document fusionné...</div>';
         var purchaseId = getCurrentPurchaseId();
         if (!purchaseId) {
             pdfContainer.innerHTML = '<div class="alert alert-warning">Impossible de déterminer la commande actuelle.</div>';
             return;
         }
-        
-        // Utiliser fetch au lieu de ajax.jsonRpc pour compatibilité Odoo 17
-        fetch('/web/dataset/call_kw', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                jsonrpc: "2.0",
-                method: "call",
-                params: {
-                    model: 'ir.attachment',
-                    method: 'search_read',
-                    args: [],
-                    kwargs: {
-                        domain: [
-                            ['res_model', '=', 'purchase.order'],
-                            ['res_id', '=', purchaseId],
-                            ['mimetype', 'in', ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']]
-                        ],
-                        fields: ['id', 'name', 'mimetype'],
-                        order: 'create_date desc'
-                    }
-                },
-                id: Math.floor(Math.random() * 1000000)
+        // Vérifier l'existence du PDF fusionné via une requête GET (remplace HEAD pour supporter Odoo routes)
+        fetch(`/purchase_document_extension/merged_pdf/${purchaseId}`)
+            .then(resp => {
+                if (resp.ok) {
+                    // Afficher le PDF fusionné
+                    renderMergedPdf(pdfContainer, purchaseId);
+                } else {
+                    pdfContainer.innerHTML = '<div class="alert alert-info">Aucun document fusionné disponible pour cette commande.</div>';
+                }
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.result) {
-                renderAttachments(pdfContainer, data.result);
-            } else {
-                pdfContainer.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des documents.</div>';
-            }
-        })
-        .catch(error => {
-            pdfContainer.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des documents.</div>';
-            console.error('Erreur lors du chargement des pièces jointes:', error);
-        });
+            .catch(() => {
+                pdfContainer.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement du document fusionné.</div>';
+            });
     }
-    
-    // Rend les pièces jointes dans le conteneur
-    function renderAttachments(pdfContainer, attachments) {
-        // Vider le conteneur
+
+    // Affiche le PDF fusionné dans le conteneur
+    function renderMergedPdf(pdfContainer, purchaseId) {
         pdfContainer.innerHTML = '';
-        
-        // Si aucune pièce jointe, afficher un message
-        if (!attachments || attachments.length === 0) {
-            pdfContainer.innerHTML = '<div class="alert alert-info">Aucun document PDF ou image n\'est attaché à cette commande.</div>';
-            return;
-        }
-        
-        // Créer un élément pour chaque pièce jointe
-        attachments.forEach(function(attachment) {
-            var fileUrl = '/web/content/' + attachment.id + '?download=true';
-            var attachmentDiv = document.createElement('div');
-            attachmentDiv.className = 'mb-5 attachment-item';
-            
-            var header = document.createElement('div');
-            header.className = 'attachment-header mb-3';
-            header.innerHTML = '<h5>' + attachment.name + '</h5>';
-            
-            attachmentDiv.appendChild(header);
-            
-            // Si c'est un PDF, l'afficher avec <embed> et agrandir la hauteur
-            if (attachment.mimetype === 'application/pdf') {
-                var embed = document.createElement('embed');
-                embed.src = fileUrl;
-                embed.type = 'application/pdf';
-                embed.width = '100%';
-                embed.height = '800px'; // Hauteur augmentée pour mieux voir le document
-                embed.style.border = '1px solid #e2e2e2';
-                attachmentDiv.appendChild(embed);
-            } 
-            // Si c'est une image, l'afficher avec <img>
-            else if (attachment.mimetype.startsWith('image/')) {
-                var img = document.createElement('img');
-                img.src = fileUrl;
-                img.style.maxWidth = '100%';
-                img.style.maxHeight = '800px'; // Hauteur augmentée
-                img.style.objectFit = 'contain';
-                img.style.display = 'block';
-                img.style.margin = '0 auto';
-                img.style.border = '1px solid #e2e2e2';
-                attachmentDiv.appendChild(img);
-            }
-            
-            pdfContainer.appendChild(attachmentDiv);
-        });
+        var embed = document.createElement('embed');
+        embed.src = `/purchase_document_extension/merged_pdf/${purchaseId}`;
+        embed.type = 'application/pdf';
+        embed.width = '100%';
+        embed.height = '800px';
+        embed.style.border = '1px solid #e2e2e2';
+        pdfContainer.appendChild(embed);
     }
     
     // Récupère l'ID de la commande actuelle depuis l'URL

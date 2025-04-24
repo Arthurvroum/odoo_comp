@@ -151,10 +151,16 @@ patch(FormArchParser.prototype, {
     }
 });
 
-export default {
+// Créer un objet parser avec la méthode parse nécessaire
+const enhanceManyToOneParser = {
     name: "enhance_many2one_parser",
     priority: 30,
     condition: arch => {
         return arch.querySelector("enhance_many2one") !== null;
     },
 };
+
+// Enregistrer le parser dans le registre approprié
+registry.category("form_arch_parser").add("enhance_many2one_parser", enhanceManyToOneParser);
+
+export default enhanceManyToOneParser;

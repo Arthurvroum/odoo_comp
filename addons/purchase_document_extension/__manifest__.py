@@ -13,6 +13,9 @@
             'purchase_document_extension/static/src/js/pdf_viewer.js',
         ],
     },
+    'external_dependencies': {
+        'python': ['PyPDF2'],
+    },
     'installable': True,
     'application': True,
     'auto_install': False,

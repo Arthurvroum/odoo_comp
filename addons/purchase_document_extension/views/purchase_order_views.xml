@@ -6,10 +6,9 @@
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
-            <!-- Suppression du champ documents sous le fournisseur -->
+            <!-- Champ documents sous le fournisseur -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <!-- Gardons uniquement le champ dans l'onglet Documents, mais caché ici -->
-                <field name="attachment_ids" invisible="0" widget="many2many_binary" 
+                <field name="attachment_ids" widget="many2many_binary" 
                        options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
                        context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
             </xpath>
@@ -18,11 +17,11 @@
             <xpath expr="//sheet" position="before">
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; margin-top: 5px; padding-right: 15px;">
                     <div id="tabs_container" style="display: flex; background-color: white; border: 1px solid #dee2e6; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                        <div id="tab_chat" class="tab-item active" style="padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; background-color: #e9f5ff; font-weight: bold; display: flex; align-items: center; margin-right: 1px;">
+                        <div id="tab_chat" class="tab-item active" style="padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; border-bottom: 3px solid #007bff; background-color: #e9f5ff; font-weight: bold; display: flex; align-items: center; margin-right: 1px;">
                             <i class="fa fa-comments" style="margin-right: 5px; width: 20px; text-align: center;"></i>
                             <span>Messages</span>
                         </div>
-                        <div id="tab_docs" class="tab-item" style="padding: 10px 15px; cursor: pointer; transition: all 0.3s ease;; display: flex; align-items: center;">
+                        <div id="tab_docs" class="tab-item" style="padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; border-bottom: 3px solid transparent; display: flex; align-items: center;">
                             <i class="fa fa-file-text-o" style="margin-right: 5px; width: 20px; text-align: center;"></i>
                             <span>Documents</span>
                         </div>
@@ -30,14 +29,11 @@
                 </div>
             </xpath>
             
-            <!-- Ajouter la zone pour les documents PDF avant le chatter -->
+            <!-- Ajouter la zone pour les documents PDF avant le chatter, mais simplifiée -->
             <xpath expr="//div[hasclass('oe_chatter')]" position="before">
-                <!-- Zone pour les documents avec PDF viewer -->
-                <div id="docs_content" style="display:none; width: 34.55%; margin-bottom: 20px;">
+                <!-- Zone pour les documents avec PDF viewer, sans l'en-tête et le champ redondant -->
+                <div id="docs_content" style="display:none; width: 34.6%; margin-bottom: 20px;">
                     <div class="docs-container">
-                        <div class="docs-header mb-3 d-flex justify-content-between align-items-center">
-                        </div>
-                        
                         <!-- PDF Viewer Container -->
                         <div id="pdf_viewer_container" class="mt-3" style="width: 100%;">
                             <!-- PDFs seront chargés ici dynamiquement -->
