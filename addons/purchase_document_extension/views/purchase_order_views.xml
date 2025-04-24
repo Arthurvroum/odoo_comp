@@ -6,34 +6,47 @@
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
-            <!-- Ajoute le champ documents sous le fournisseur -->
+            <!-- Suppression du champ documents sous le fournisseur -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="attachment_ids" widget="many2many_binary" string="Documents PDF" 
+                <!-- Gardons uniquement le champ dans l'onglet Documents, mais caché ici -->
+                <field name="attachment_ids" invisible="0" widget="many2many_binary" 
                        options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
                        context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
             </xpath>
             
-            <!-- Ajoute le conteneur principal avec CSS pour positionner les onglets verticaux -->
+            <!-- Ajoute le conteneur principal avec CSS responsive -->
             <xpath expr="//div[hasclass('oe_chatter')]" position="before">
-                <div class="d-flex align-items-start mb-3">
-                    <!-- Onglets verticaux à gauche avec style amélioré -->
-                    <div class="vertical-tabs" style="display: flex; flex-direction: column; min-width: 150px; border-right: 1px solid #dee2e6;">
-                        <div id="tab_chat" class="vertical-tab active" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid #007bff; display: flex; align-items: center; background-color: #e9f5ff; font-weight: bold;">
+                <div class="adaptive-tabs mb-3 d-flex">
+                    <!-- Onglets avec style adaptable -->
+                    <div id="tabs_container" class="tabs-container" style="display: flex; flex-direction: column; min-width: 150px; border-right: 1px solid #dee2e6; margin-right: 15px;">
+                        <div id="tab_chat" class="tab-item active" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid #007bff; display: flex; align-items: center; background-color: #e9f5ff; font-weight: bold; margin-bottom: 5px;">
                             <i class="fa fa-comments" style="margin-right: 10px; width: 20px; text-align: center;"></i>
                             <span>Messages</span>
                         </div>
-                        <div id="tab_docs" class="vertical-tab" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid transparent; display: flex; align-items: center;">
+                        <div id="tab_docs" class="tab-item" style="padding: 15px; cursor: pointer; transition: all 0.3s ease; border-left: 3px solid transparent; display: flex; align-items: center;">
                             <i class="fa fa-file-text-o" style="margin-right: 10px; width: 20px; text-align: center;"></i>
                             <span>Documents</span>
                         </div>
                     </div>
                     
-                    <!-- Zone pour les documents (masquée par défaut) -->
-                    <div id="docs_content" class="tab-content" style="display:none; flex-grow: 1; padding: 0 15px;">
-                        <h4 class="mb-3">Documents attachés</h4>
-                        <field name="attachment_ids" widget="many2many_binary" 
-                              options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
-                              context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
+                    <!-- Zone pour les documents avec PDF viewer agrandi -->
+                    <div id="docs_content" class="tab-content" style="display:none; flex-grow: 1; padding: 0 15px; width: 100%;">
+                        <div class="docs-container">
+                            <div class="docs-header mb-3 d-flex justify-content-between align-items-center">
+                                <h4>Documents attachés</h4>
+                                <!-- Widget d'importation plus discret -->
+                                <div class="upload-button">
+                                    <field name="attachment_ids" widget="many2many_binary" 
+                                          options="{'accepted_file_extensions': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.png'}" 
+                                          context="{'default_res_model': 'purchase.order', 'default_res_id': id}"/>
+                                </div>
+                            </div>
+                            
+                            <!-- PDF Viewer Container agrandi -->
+                            <div id="pdf_viewer_container" class="mt-3" style="width: 100%;">
+                                <!-- PDFs seront chargés ici dynamiquement -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </xpath>

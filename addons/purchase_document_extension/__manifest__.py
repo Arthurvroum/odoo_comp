@@ -10,6 +10,7 @@
     'assets': {
         'web.assets_backend': [
             'purchase_document_extension/static/src/js/tabs.js',
+            'purchase_document_extension/static/src/js/pdf_viewer.js',
         ],
     },
     'installable': True,
